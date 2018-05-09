@@ -12,7 +12,7 @@ global url_pool
 # url_pool = ["https://stackoverflow.com/questions/tagged/python?page=" + str(i) + "&sort=votes&pagesize=15" for i in
 #             range(1, 62266)]
 url_pool = ["https://stackoverflow.com/questions/tagged/python?page=" + str(i) + "&sort=votes&pagesize=15" for i in
-            range(1, 2)]
+            range(1, 101)]
 global sub_url_pool
 sub_url_pool = []
 global questions_list_dict
@@ -59,16 +59,23 @@ def sub_url_analysis(sub_url):
         except AttributeError as e:
             print(e)
             return None
-    votes = bs_obj.findAll('span', {'class': 'vote-count-post high-scored-post'})
+    votes_temp = bs_obj.findAll('span', {'class': 'vote-count-post high-scored-post'})
+    votes = []
+    for i in votes_temp[0:2]:
+        try:
+            vote = i.get_text()
+        except Exception as e:
+            print(e)
+        votes.append(vote)
+    # for i in votes:
+    #     print(i, end=' ')
+    # print('')
 
     question_id = int(sub_url.split('/')[4])
     question_name = bs_obj.find("a", {"class": "question-hyperlink"}).get_text()
     favorite_count = int(bs_obj.find('div', {'class': 'favoritecount'}).get_text())
-    question_vote = int(votes[0].get_text())
-    if len(votes) > 1:
-        answer_vote = int(votes[1].get_text())
-    else:
-        answer_vote = None
+    question_vote = int(votes[0])
+    answer_vote = int(votes[1]) if len(votes) > 1 else 0
     answer_text = str(bs_obj.findAll('div', {'class': 'post-text', 'itemprop': 'text'})[1].get_text)
     return_dict = {
         'question_id': question_id,
@@ -78,14 +85,13 @@ def sub_url_analysis(sub_url):
         'question_vote': question_vote,
         'answer_text': answer_text
     }
-    # for item, value in return_dict.items():
-    #     print("{0}: {1}".format(item, type(value)))
     questions_list_dict.append(return_dict)
 
 
 def data_store(question_dict):
     conn = sqlite3.connect('SO-Python.db')
     c = conn.cursor()
+
     try:
         c.execute('insert into SOPython values (?,?,?,?,?,?)',
                   [question_dict.get('question_id'), question_dict.get('question_name'),
